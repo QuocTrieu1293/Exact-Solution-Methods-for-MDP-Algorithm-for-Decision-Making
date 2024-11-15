@@ -5,7 +5,7 @@ import pygame
 from hexagon import HexagonTile
 from HexWorldMDP import HexWorldMDP
 from ch07 import PolicyIteration
-from elements import ColorBar
+from elements import ColorBar, Button
 from config import *
 from sys import exit
 
@@ -13,7 +13,7 @@ def create_hexagon(position) -> HexagonTile:
   """Creates a hexagon tile at the specified position"""
   return HexagonTile(HEX_RADIUS, position, colour=(255, 253, 246), border_colour=(55, 175, 225))
 
-def create_text(text, font='FiraCode-VF.ttf', size=24, color=(255, 253, 246)) -> pygame.Surface:
+def create_text(text, font='FiraCode-Medium.ttf', size=24, color=(255, 253, 246)) -> pygame.Surface:
   text_font = pygame.font.Font(font,size)
   return text_font.render(text, True, color=color)
 
@@ -117,36 +117,52 @@ value_functions = [
   *policy_iteration.value_functions
 ]
 hex_colors = [value_to_color(U) for U in value_functions]
-iteration_index = len(value_functions) - 1
+iteration_index = 0
+total_iterations = len(value_functions) - 1
+active = True
 
-def main():
-  """Main function"""
-  pygame.init()
-  pygame.display.set_caption('Minh hoạ thuật toán ra quyết định Chương 7')
-  screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-  clock = pygame.time.Clock()
-  hexagons = init_hexagons(hexes)
-  color_bar = ColorBar(screen)
+pygame.init()
+pygame.display.set_caption('Minh hoạ thuật toán ra quyết định Chương 7')
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+clock = pygame.time.Clock()
+hexagons = init_hexagons(hexes)
+color_bar = ColorBar(screen)
+
+def next_iteration():
+  global iteration_index
+  iteration_index += 1
+def prev_iteration():
+  global iteration_index
+  iteration_index -= 1
+prev_btn = Button(pos=(10, SCREEN_HEIGHT-60), size=(60,30), text='prev', elevation=4, callback=prev_iteration, key=pygame.K_LEFT)
+next_btn = Button(pos=(150, SCREEN_HEIGHT-60), size=(60,30), text='next', elevation=4, callback=next_iteration, key=pygame.K_RIGHT)
+
+while True:
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+      pygame.quit()
+      exit()
+  if iteration_index == total_iterations: next_btn.enable = False
+  else: next_btn.enable = True
+  if iteration_index == 0: prev_btn.enable = False
+  else: prev_btn.enable = True
   
-  while True:
-    for event in pygame.event.get():
-      if event.type == pygame.QUIT:
-        pygame.quit()
-        exit()
-
-    # screen.fill((0, 0, 0))
-    screen.fill((52, 49, 49))
-    for i in range(len(hexagons)):
-      update_hex(hexagons[i], 
-                 value=value_functions[iteration_index][i], 
-                 action=policies[iteration_index][i], 
-                 colour=hex_colors[iteration_index][i])
+  screen.fill((52, 49, 49))
+  for i in range(len(hexagons)):
+    update_hex(hexagons[i], 
+              value=value_functions[iteration_index][i], 
+              action=policies[iteration_index][i], 
+              colour=hex_colors[iteration_index][i])
+  
+  render(screen, hexagons)
+  color_bar.update(vmin=np.nanmin(value_functions[iteration_index]), vmax=np.nanmax(value_functions[iteration_index]))
+  prev_btn.render(screen)
+  itr_text = create_text(f'{iteration_index} / {total_iterations}', font='freesansbold.ttf', size=20)
+  itr_text_rect = itr_text.get_rect(center=((prev_btn.bottom_rect.right+next_btn.bottom_rect.left)/2, prev_btn.bottom_rect.centery))
+  screen.blit(itr_text, itr_text_rect)
+  next_btn.render(screen)
+  
+  clock.tick(50)
+  pygame.display.flip()
+  
     
-    render(screen, hexagons)
-    color_bar.update(vmin=np.nanmin(value_functions[iteration_index]), vmax=np.nanmax(value_functions[iteration_index]))
-    
-    clock.tick(50)
-    pygame.display.flip()
-
-if __name__ == "__main__":
-  main()
