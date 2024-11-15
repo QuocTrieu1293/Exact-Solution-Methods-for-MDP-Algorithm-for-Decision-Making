@@ -193,6 +193,7 @@ while True:
   if auto_running:
     prev_btn.enable, next_btn.enable, restart_btn.enable = False, False, False
   else:
+    restart_btn.enable = True
     if iteration_index == total_iterations: next_btn.enable = False
     else: next_btn.enable = True
     if iteration_index == 0: prev_btn.enable = False
