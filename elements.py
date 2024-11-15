@@ -44,18 +44,21 @@ class ColorBar:
     plt.close(fig)
 
 class Button:
-  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], text: str='', elevation: float = 0, callback: Callable = None, enable: bool = True, key: int = None):
+  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', 
+               elevation: float = 0, callback: Callable = None, enable: bool = True, key: int = None):
     self.pos = pos
     self.enable = enable
     
-    text_font = pygame.font.Font('freesansbold.ttf', 16)
-    self.text_surf = text_font.render(text,True,(52, 49, 49))
-    self.size = (max(size[0], self.text_surf.get_width() + 10), max(size[1], self.text_surf.get_height() + 10))
+    if type(content) == str:
+      self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(content,True,(52, 49, 49))
+    else:
+      self.content_surf = content
+    self.size = (max(size[0], self.content_surf.get_width() + 10), max(size[1], self.content_surf.get_height() + 10))
     
     self.top_rect = pygame.Rect(pos, self.size)
     self.color = '#faf7f0'
     
-    self.text_rect = self.text_surf.get_rect(center=self.top_rect.center)
+    self.content_rect = self.content_surf.get_rect(center=self.top_rect.center)
     
     self.elevation = elevation
     self.bottom_rect = pygame.Rect((pos[0], pos[1] + elevation), self.size)
@@ -75,7 +78,7 @@ class Button:
     
     pygame.draw.rect(screen, "#817E74", self.bottom_rect, border_radius=7)
     pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
-    screen.blit(self.text_surf, self.text_rect)
+    screen.blit(self.content_surf, self.content_rect)
   
   def handle_click(self):
     if self.top_rect.collidepoint(pygame.mouse.get_pos()):
@@ -104,4 +107,45 @@ class Button:
       self.color = '#faf7f0'
       self.top_rect.y = self.pos[1]
       
-    self.text_rect.center = self.top_rect.center
+    self.content_rect.center = self.top_rect.center
+
+class ToggleButton(Button):
+  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', elevation: float = 0, key: int = None, active: bool = False):
+    super().__init__(pos=pos, size=size, elevation=elevation, key=key)    
+    self.active = active
+    self.content = content
+
+  def handle_click(self):
+    if self.top_rect.collidepoint(pygame.mouse.get_pos()):
+      if not pygame.mouse.get_pressed()[0]:
+        self.first_mouse_pressed = True
+        if self.mouse_pressed:
+          self.mouse_pressed = False
+          self.active = not self.active
+      elif self.first_mouse_pressed:
+        self.mouse_pressed = True
+    else:
+      self.mouse_pressed = False
+      self.first_mouse_pressed = False
+      
+    if self.key != None:
+      if pygame.key.get_pressed()[self.key]:
+        self.key_pressed = True
+      elif self.key_pressed:
+        self.key_pressed = False
+        self.active = not self.active
+      
+    if self.active:
+      self.color = '#399918'
+      self.top_rect.y = self.pos[1] + self.elevation
+      if type(self.content) == str: 
+        self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(self.content, True, '#F4CE14')
+        self.content_rect = self.content_surf.get_rect()
+    else:
+      self.color = '#faf7f0'
+      self.top_rect.y = self.pos[1]
+      if type(self.content) == str: 
+        self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(self.content, True, (52, 49, 49))
+        self.content_rect = self.content_surf.get_rect()
+        
+    self.content_rect.center = self.top_rect.center
