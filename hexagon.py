@@ -7,6 +7,7 @@ from typing import List, Tuple
 import pygame
 from pygame import gfxdraw
 import numpy as np
+import pygame.gfxdraw
 
 @dataclass
 class HexagonTile:
@@ -20,6 +21,8 @@ class HexagonTile:
   max_highlight_ticks: int = 15
   value: float = None
   action: int = None
+  clicked: bool = False
+  first_hovered: bool = False
 
   def __post_init__(self):
     self.vertices = self.compute_vertices()
@@ -121,5 +124,24 @@ class HexagonTile:
       [(
         math.cos(math.radians(deg)) * (x - cx) - math.sin(math.radians(deg)) * (y - cy) + cx, 
         math.sin(math.radians(deg)) * (x - cx) + math.cos(math.radians(deg)) * (y - cy) + cy
-      ) for x,y in right_arrow] for deg in range(-0, -360, -60) # phải dùng góc âm vì gốc toạ độ của chương trình là góc trên bên phải
+      ) for x,y in right_arrow] for deg in range(-0, -360, -60) # phải dùng góc âm vì gốc toạ độ của chương trình là góc trên bên trái
     ]
+    
+  def check_clicked(self) -> bool:
+    pressed_mouse = pygame.mouse.get_pressed()
+    if self.collide_with_point(pygame.mouse.get_pos()):
+      if not pressed_mouse[0]:
+        self.first_hovered = True
+        if self.mouse_pressed:
+          self.mouse_pressed = False
+          return True
+      elif self.first_hovered:
+        self.mouse_pressed = True
+    else:
+      self.mouse_pressed = False
+      self.first_hovered = False
+    
+    return False
+  
+  def render_clicked_border(self, screen) -> None:
+    pygame.draw.polygon(screen, '#399918', self.vertices, 5)

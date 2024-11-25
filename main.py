@@ -73,19 +73,28 @@ def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
   # display value and action when hover on an hexagon
   mouse_pos = pygame.mouse.get_pos()
   hovered_hex = next((hex for hex in hexagons if hex.collide_with_point(mouse_pos)), None)
-  if hovered_hex:
-    hovered_hex.render_highlight(screen, (0, 0, 0))
-    action_surface = create_text(f'Action: {ACTIONS[hovered_hex.action]}')
-    reward_surface = create_text(f'Expected reward: {hovered_hex.value}' if iteration_index > 0 
-                                 else f'Reward: {hovered_hex.value if not np.isnan(hovered_hex.value) else 0}')
+  
+  def displayActionReward(hex: HexagonTile):
+    action_surface = create_text(f'Action: {ACTIONS[hex.action]}')
+    reward_surface = create_text(f'Expected reward: {hex.value}' if iteration_index > 0 
+                                 else f'Reward: {hex.value if not np.isnan(hex.value) else 0}')
     action_rect = action_surface.get_rect(midtop=(SCREEN_WIDTH/2, iteration_rect.bottom + 8))
     screen.blit(action_surface, action_rect)
     screen.blit(reward_surface, reward_surface.get_rect(midtop=(SCREEN_WIDTH/2, action_rect.bottom + 5)))
   
+  if hovered_hex:
+    hovered_hex.render_highlight(screen, (0, 0, 0))
+    displayActionReward(hovered_hex)
+  elif clicked_hex:
+    displayActionReward(clicked_hex)
+    
+  if clicked_hex:
+    clicked_hex.render_clicked_border(screen)
+  
   # display params of HexWorld
   line_space, text_size = 0, 16
   
-  method_surf = create_text(f'Policy Iteration', size=text_size+3)
+  method_surf = create_text(f'{mode}', size=text_size+3)
   method_rect = method_surf.get_rect(midtop=(5, 8))
   
   reward_border_surf = create_text(f'Reward for bumping border: {r_bump_border}', size=text_size)
@@ -118,6 +127,9 @@ def update_hex(hex: HexagonTile, value, action, colour):
   hex.value = value
   hex.action = action
   hex.colour, hex.border_colour = colour
+  global clicked_hex
+  if hex.check_clicked():
+    clicked_hex = hex if hex is not clicked_hex else None
 
 def run_policy_iteration():
   global initial_policy, policy_iteration, optimal_policy, policies, value_functions, hex_colors, iteration_index, total_iterations
@@ -133,6 +145,7 @@ def run_policy_iteration():
   iteration_index = 0
   total_iterations = len(value_functions) - 1
 
+# input data
 hexes = [
   (0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(-1,2),
   (0,2),(1,2),(2,2),(3,2),(4,2),(5,2),(6,2),(7,2),
@@ -144,7 +157,6 @@ special_hex_rewards = {
   (9,0): 10.0    # right side reward
 }
 r_bump_border, p_intended, gamma = -1.0, 0.7, 0.9 
-
 HexWorld = HexWorldMDP(
     hexes=hexes,
     r_bump_border=r_bump_border,  # Reward for falling off hex map
@@ -160,15 +172,27 @@ pygame.display.set_caption('Minh hoạ thuật toán ra quyết định Chương
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 hexagons = init_hexagons(hexes)
+clicked_hex = None
 color_bar = ColorBar(screen)
 
+# change mode
+POLICY_ITERATION = 'Policy Iteration'
+VALUE_ITERATION = 'Value Iteration'
+SIMULATE = 'Simulate'
+mode = POLICY_ITERATION
+policy_itr_btn = ToggleButton(pos=(SCREEN_WIDTH - 230, 50), size=(200, 50), content=POLICY_ITERATION, active=True, 
+                              active_color="#F4CE14", active_text_color="#3B1E54", text_size=20) 
+value_itr_btn = ToggleButton(pos=(SCREEN_WIDTH - 230,policy_itr_btn.bottom_rect.bottom + 15), size=(200, 50), content=VALUE_ITERATION, 
+                             active=False, active_color="#F4CE14", active_text_color="#3B1E54", text_size=20)
+simulate_btn = ToggleButton(pos=(SCREEN_WIDTH - 230,value_itr_btn.bottom_rect.bottom + 15), size=(200, 50), content=SIMULATE, 
+                             active=False, active_color="#F4CE14", active_text_color="#3B1E54", text_size=20)
+# control button
 def next_iteration():
   global iteration_index
   iteration_index += 1
 def prev_iteration():
   global iteration_index
   iteration_index -= 1
-
 prev_btn = Button(pos=(10, SCREEN_HEIGHT-60), size=(60,30), content='prev', elevation=4, callback=prev_iteration, key=pygame.K_LEFT)
 next_btn = Button(pos=(prev_btn.bottom_rect.right + 60, SCREEN_HEIGHT-60), size=(60,30), 
                   content='next', elevation=4, callback=next_iteration, key=pygame.K_RIGHT)
@@ -181,24 +205,48 @@ AUTO_RUN_EVENT = pygame.USEREVENT  + 1
 auto_running = False
 
 while True:
+  # handle events
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       pygame.quit()
       exit()
+    elif event.type in [pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]:
+      mouse_pos = pygame.mouse.get_pos()
+      mouse_pressed = pygame.mouse.get_pressed()
+      # if event.type == pygame.MOUSEBUTTONDOWN: print('mouse down')
+      # elif event.type == pygame.MOUSEBUTTONUP: print('mouse up')
+      # print(mouse_pressed)
+      prev_btn.handle_event(event, mouse_pos, mouse_pressed)
+      next_btn.handle_event(event, mouse_pos, mouse_pressed)
+      restart_btn.handle_event(event, mouse_pos, mouse_pressed)
+      auto_btn.handle_event(event, mouse_pos, mouse_pressed)
+      policy_itr_btn.handle_event(event, mouse_pos, mouse_pressed)
+      value_itr_btn.handle_event(event, mouse_pos, mouse_pressed)
+      simulate_btn.handle_event(event, mouse_pos, mouse_pressed)
     elif event.type == AUTO_RUN_EVENT:
       iteration_index += 1
       if iteration_index == total_iterations:
         auto_btn.active = False
-      
-  if auto_running:
-    prev_btn.enable, next_btn.enable, restart_btn.enable = False, False, False
-  else:
-    restart_btn.enable = True
-    if iteration_index == total_iterations: next_btn.enable = False
-    else: next_btn.enable = True
-    if iteration_index == 0: prev_btn.enable = False
-    else: prev_btn.enable = True
+        
+  if iteration_index == total_iterations: next_btn.enable = False
+  elif not auto_running: next_btn.enable = True
   
+  if iteration_index == 0: prev_btn.enable = False
+  elif not auto_running: prev_btn.enable = True
+  
+  if auto_btn.active and not auto_running:
+    auto_running = True
+    iteration_index = 0
+    prev_btn.enable, next_btn.enable, restart_btn.enable = False, False, False
+    pygame.time.set_timer(AUTO_RUN_EVENT, 1500)
+  elif not auto_btn.active and auto_running:
+    auto_running = False
+    if iteration_index != 0: prev_btn.enable = True
+    if iteration_index != total_iterations: next_btn.enable = True
+    restart_btn.enable = True
+    pygame.time.set_timer(AUTO_RUN_EVENT, 0)
+    
+  # render on screen 
   screen.fill((52, 49, 49))
   for i in range(len(hexagons)):
     update_hex(hexagons[i], 
@@ -208,6 +256,7 @@ while True:
   
   render(screen, hexagons)
   color_bar.update(vmin=np.nanmin(value_functions[iteration_index]), vmax=np.nanmax(value_functions[iteration_index]))
+  
   prev_btn.render(screen)
   itr_text = create_text(f'{iteration_index} / {total_iterations}', font='freesansbold.ttf', size=20)
   itr_text_rect = itr_text.get_rect(center=((prev_btn.bottom_rect.right+next_btn.bottom_rect.left)/2, prev_btn.bottom_rect.centery))
@@ -215,13 +264,10 @@ while True:
   next_btn.render(screen)
   restart_btn.render(screen)
   auto_btn.render(screen)
-  if auto_btn.active and not auto_running:
-    auto_running = True
-    iteration_index = 0
-    pygame.time.set_timer(AUTO_RUN_EVENT, 1000)
-  elif not auto_btn.active:
-    auto_running = False
-    pygame.time.set_timer(AUTO_RUN_EVENT, 0)
+    
+  policy_itr_btn.render(screen)
+  value_itr_btn.render(screen)
+  simulate_btn.render(screen)
   
   clock.tick(50)
   pygame.display.flip()

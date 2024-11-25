@@ -45,12 +45,13 @@ class ColorBar:
 
 class Button:
   def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', 
-               elevation: float = 0, callback: Callable = None, enable: bool = True, key: int = None):
+               elevation: float = 0, callback: Callable = None, enable: bool = True, key: int = None, text_size:int = 16):
     self.pos = pos
     self.enable = enable
+    self.text_size = text_size
     
     if type(content) == str:
-      self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(content,True,(52, 49, 49))
+      self.content_surf = pygame.font.Font('freesansbold.ttf', self.text_size).render(content,True,(52, 49, 49))
     else:
       self.content_surf = content
     self.size = (max(size[0], self.content_surf.get_width() + 10), max(size[1], self.content_surf.get_height() + 10))
@@ -67,85 +68,96 @@ class Button:
     
     self.key = key
     self.mouse_pressed = False
-    self.first_mouse_pressed = False
+    self.mouse_entered = False
     self.key_pressed = False
     
   def render(self, screen: pygame.Surface):
-    if self.enable:
-      self.handle_click()
-    else:
+    if not self.enable:
       self.color = '#cccccc'
-    
-    pygame.draw.rect(screen, "#817E74", self.bottom_rect, border_radius=7)
-    pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
-    screen.blit(self.content_surf, self.content_rect)
-  
-  def handle_click(self):
-    if self.top_rect.collidepoint(pygame.mouse.get_pos()):
-      if not pygame.mouse.get_pressed()[0]:
-        self.first_mouse_pressed = True
-        if self.mouse_pressed:
-          self.mouse_pressed = False
-          if self.callback: self.callback()
-      elif self.first_mouse_pressed:
-        self.mouse_pressed = True
-    else:
-      self.mouse_pressed = False
-      self.first_mouse_pressed = False
-      
-    if self.key != None:
-      if pygame.key.get_pressed()[self.key]:
-        self.key_pressed = True
-      elif self.key_pressed:
-        self.key_pressed = False
-        if self.callback: self.callback()
-      
-    if self.mouse_pressed or self.key_pressed:
+    elif self.mouse_pressed or self.key_pressed:
       self.color = "#c8c5c0"
       self.top_rect.y = self.pos[1] + self.elevation
     else:
       self.color = '#faf7f0'
       self.top_rect.y = self.pos[1]
-      
+    
     self.content_rect.center = self.top_rect.center
+    
+    pygame.draw.rect(screen, "#817E74", self.bottom_rect, border_radius=7)
+    pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
+    screen.blit(self.content_surf, self.content_rect)
+  
+  def handle_event(self, event: pygame.Event, mouse_pos: Tuple[int, int], mouse_pressed: Tuple[int, int, int]):
+    if not self.enable:
+      return
+    if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]: 
+      if self.top_rect.collidepoint(mouse_pos):
+        if not mouse_pressed[0]:
+          self.mouse_entered = True
+          if self.mouse_pressed:
+            self.mouse_pressed = False
+            if self.callback: self.callback()
+        elif self.mouse_entered:
+          self.mouse_pressed = True
+      else:
+        self.mouse_pressed = False
+        self.mouse_entered = False
+    elif event.type in [pygame.KEYDOWN, pygame.KEYUP] and event.key == self.key:
+      if event.type == pygame.KEYDOWN:
+        self.key_pressed = True
+      else:
+        self.key_pressed = False
+        if self.callback: self.callback()
 
 class ToggleButton(Button):
-  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', elevation: float = 0, key: int = None, active: bool = False):
-    super().__init__(pos=pos, size=size, elevation=elevation, key=key)    
+  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', 
+               elevation: float = 0, key: int = None, text_size:int = 16, active: bool = False, active_color = '#399918', active_text_color = '#F4CE14'):
+    super().__init__(pos=pos, size=size, content=content, elevation=elevation, key=key, text_size=text_size)    
     self.active = active
     self.content = content
+    self.active_color = active_color
+    self.active_text_color = active_text_color
 
-  def handle_click(self):
-    if self.top_rect.collidepoint(pygame.mouse.get_pos()):
-      if not pygame.mouse.get_pressed()[0]:
-        self.first_mouse_pressed = True
-        if self.mouse_pressed:
-          self.mouse_pressed = False
-          self.active = not self.active
-      elif self.first_mouse_pressed:
-        self.mouse_pressed = True
-    else:
-      self.mouse_pressed = False
-      self.first_mouse_pressed = False
-      
-    if self.key != None:
-      if pygame.key.get_pressed()[self.key]:
-        self.key_pressed = True
-      elif self.key_pressed:
-        self.key_pressed = False
-        self.active = not self.active
-      
-    if self.active:
-      self.color = '#399918'
+  def render(self, screen: pygame.Surface):
+    if not self.enable:
+      self.color = '#cccccc'  
+    elif self.active:
+      self.color = self.active_color
       self.top_rect.y = self.pos[1] + self.elevation
       if type(self.content) == str: 
-        self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(self.content, True, '#F4CE14')
+        self.content_surf = pygame.font.Font('freesansbold.ttf', self.text_size).render(self.content, True, self.active_text_color)
         self.content_rect = self.content_surf.get_rect()
     else:
       self.color = '#faf7f0'
       self.top_rect.y = self.pos[1]
       if type(self.content) == str: 
-        self.content_surf = pygame.font.Font('freesansbold.ttf', 16).render(self.content, True, (52, 49, 49))
+        self.content_surf = pygame.font.Font('freesansbold.ttf', self.text_size).render(self.content, True, (52, 49, 49))
         self.content_rect = self.content_surf.get_rect()
-        
+    
     self.content_rect.center = self.top_rect.center
+    
+    pygame.draw.rect(screen, "#817E74", self.bottom_rect, border_radius=7)
+    pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
+    screen.blit(self.content_surf, self.content_rect)
+
+  def handle_event(self, event: pygame.Event, mouse_pos: Tuple[int, int], mouse_pressed: Tuple[int, int, int]):
+    if not self.enable: 
+      return
+    if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]:
+      if self.top_rect.collidepoint(mouse_pos):
+        if not mouse_pressed[0]:
+          self.mouse_entered = True
+          if self.mouse_pressed:
+            self.mouse_pressed = False
+            self.active = not self.active
+        elif self.mouse_entered:
+          self.mouse_pressed = True
+      else:
+        self.mouse_pressed = False
+        self.mouse_entered = False
+    elif event.type in [pygame.KEYDOWN, pygame.KEYUP] and event.key == self.key:
+      if pygame.KEYDOWN and not self.key_pressed:
+        self.key_pressed = True
+        self.active = not self.active
+      else:
+        self.key_pressed = False
