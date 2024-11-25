@@ -1,5 +1,6 @@
 import pygame
-from typing import Tuple, Callable
+import pygame.gfxdraw
+from typing import List, Tuple, Callable
 from config import *
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ class ColorBar:
   def update(self, vmin: float, vmax: float):
     if self.vmin == vmin and self.vmax == vmax:
       self.screen.blit(self.color_bar, 
-                       ((SCREEN_WIDTH-self.color_bar.width)/2, SCREEN_HEIGHT-self.color_bar.height-15))
+                       ((SCREEN_WIDTH - self.color_bar.width) / 2 + 100, SCREEN_HEIGHT - self.color_bar.height - 15))
       return
     self.vmin = vmin
     self.vmax = vmax
@@ -40,7 +41,7 @@ class ColorBar:
     )
     self.color_bar = color_bar_surface
     self.screen.blit(self.color_bar, 
-                     ((SCREEN_WIDTH-color_bar_surface.width)/2, SCREEN_HEIGHT-color_bar_surface.height-15))
+                     ((SCREEN_WIDTH - color_bar_surface.width) / 2 + 100, SCREEN_HEIGHT - color_bar_surface.height - 15))
     plt.close(fig)
 
 class Button:
@@ -167,3 +168,59 @@ class ToggleButton(Button):
         self.active = not self.active
       else:
         self.key_pressed = False
+
+class Dropdown:
+    def __init__(self, pos: Tuple[int, int], options: List[str], size: Tuple[int, int] = (0, 0), color = '#faf7f0', border_color = (52, 49, 49),
+                 text_size = 19, font = 'assets/FiraCode-Medium.ttf', text_color = (52, 49, 49), callbacks: List[Callable | None] = []):
+        self.options = options
+        self.expanded = False
+        self.callbacks = callbacks + [None] * (len(options) - len(callbacks)) if len(options) > len(callbacks) else callbacks
+        self.color = color
+        self.border_color = border_color
+        self.text_color = text_color
+        self.font = font
+        self.text_size = text_size
+        self.sub_text_surfs = [pygame.font.Font(font,text_size-2).render(s, True, text_color) for s in options]
+        self.main_text_surfs = [pygame.font.Font(font,text_size).render(s, True, text_color) for s in options]
+        size = (max(size[0], max([surf.get_width() for surf in self.main_text_surfs]) + 44*2), 
+                     max(size[1], max([surf.get_height() for surf in self.main_text_surfs]) + 10))
+        item_size = (size[0], self.sub_text_surfs[0].get_height() + 10)
+        self.main_rect = pygame.Rect(pos, size)
+        self.sub_rects = [pygame.Rect((pos[0], self.main_rect.bottom + i * item_size[1]), item_size) for i in range(len(options))]
+        
+        self.selected_index = 0
+    
+    def render(self, screen: pygame.Surface):
+        pygame.draw.rect(screen, self.color, self.main_rect)
+        pygame.draw.rect(screen, self.border_color, self.main_rect, 3)
+        screen.blit(self.main_text_surfs[self.selected_index], 
+                    self.main_text_surfs[self.selected_index].get_rect(center=self.main_rect.center))
+        pygame.gfxdraw.filled_trigon(screen, self.main_rect.right-34, self.main_rect.centery-5,
+                                     self.main_rect.right-27, self.main_rect.centery+5,
+                                     self.main_rect.right-20, self.main_rect.centery-5,
+                                     self.text_color)
+        pygame.gfxdraw.aatrigon(screen, self.main_rect.right-34, self.main_rect.centery-5,
+                                     self.main_rect.right-27, self.main_rect.centery+5,
+                                     self.main_rect.right-20, self.main_rect.centery-5,
+                                     self.text_color)
+        
+        if not self.expanded:
+            return
+        for i, rect in enumerate(self.sub_rects):
+            pygame.draw.rect(screen, self.color, rect)
+            pygame.draw.rect(screen, "#c8c5c0", rect, 1)
+            screen.blit(self.sub_text_surfs[i], self.sub_text_surfs[i].get_rect(center=rect.center))
+    
+    def handle_event(self, event):
+        if not (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
+            return
+        if self.main_rect.collidepoint(event.pos):
+            self.expanded = not self.expanded
+        elif self.expanded:
+            for i, rect in enumerate(self.sub_rects):
+                if rect.collidepoint(event.pos):
+                    self.selected_index = i
+                    if self.callbacks[i]:
+                        self.callbacks[i]()
+                    break
+            self.expanded = False

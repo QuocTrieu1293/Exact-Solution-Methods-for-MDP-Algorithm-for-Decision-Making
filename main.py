@@ -5,7 +5,7 @@ import pygame
 from hexagon import HexagonTile
 from HexWorldMDP import HexWorldMDP
 from ch07 import PolicyIteration
-from elements import ColorBar, Button, ToggleButton
+from elements import ColorBar, Button, ToggleButton, Dropdown
 from config import *
 from sys import exit
 
@@ -94,33 +94,28 @@ def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
   # display params of HexWorld
   line_space, text_size = 0, 16
   
-  method_surf = create_text(f'{mode}', size=text_size+3)
-  method_rect = method_surf.get_rect(midtop=(5, 8))
-  
   reward_border_surf = create_text(f'Reward for bumping border: {r_bump_border}', size=text_size)
-  reward_border_rect = reward_border_surf.get_rect(topleft=(5, method_rect.bottom + line_space + 5))
+  reward_border_rect = reward_border_surf.get_rect(topleft=(8, 8))
   
   p_intended_surf = create_text(f'Prob of intended move: {p_intended}', size=text_size)
-  p_intended_rect = p_intended_surf.get_rect(topleft=(5, reward_border_rect.bottom + line_space))
+  p_intended_rect = p_intended_surf.get_rect(topleft=(8, reward_border_rect.bottom + line_space))
   
   gamma_surf = create_text(f'γ: {gamma}', size=text_size)
-  gamma_rect = gamma_surf.get_rect(topleft=(5, p_intended_rect.bottom + line_space))
+  gamma_rect = gamma_surf.get_rect(topleft=(8, p_intended_rect.bottom + line_space))
   
   param_box_surf = pygame.Surface(
-    (max(method_rect.width, reward_border_rect.width, p_intended_rect.width, gamma_rect.width) + 10,
-      method_rect.height + reward_border_rect.height + p_intended_rect.height + gamma_rect.height + 3*line_space + 21),
+    (max(reward_border_rect.width, p_intended_rect.width, gamma_rect.width) + 16,
+      reward_border_rect.height + p_intended_rect.height + gamma_rect.height + 2*line_space + 21),
     pygame.SRCALPHA
   )
   param_box_surf.fill((0, 0, 0, 120))
-  method_rect.centerx = param_box_surf.width/2
   
   param_box_surf.blits([
-    (method_surf, method_rect),
     (reward_border_surf, reward_border_rect),
     (p_intended_surf, p_intended_rect),
     (gamma_surf, gamma_rect)
   ])
-  screen.blit(param_box_surf, (10, 20))
+  screen.blit(param_box_surf, (SCREEN_WIDTH - param_box_surf.width - 10, 10))
 
 def update_hex(hex: HexagonTile, value, action, colour):
   hex.update()
@@ -144,6 +139,12 @@ def run_policy_iteration():
   hex_colors = [value_to_color(U) for U in value_functions]
   iteration_index = 0
   total_iterations = len(value_functions) - 1
+
+def run_value_iteration():
+  print('value iteration')
+
+def run_simulate():
+  print('simulate')
 
 # input data
 hexes = [
@@ -175,17 +176,6 @@ hexagons = init_hexagons(hexes)
 clicked_hex = None
 color_bar = ColorBar(screen)
 
-# change mode
-POLICY_ITERATION = 'Policy Iteration'
-VALUE_ITERATION = 'Value Iteration'
-SIMULATE = 'Simulate'
-mode = POLICY_ITERATION
-policy_itr_btn = ToggleButton(pos=(SCREEN_WIDTH - 230, 50), size=(200, 50), content=POLICY_ITERATION, active=True, 
-                              active_color="#F4CE14", active_text_color="#3B1E54", text_size=20) 
-value_itr_btn = ToggleButton(pos=(SCREEN_WIDTH - 230,policy_itr_btn.bottom_rect.bottom + 15), size=(200, 50), content=VALUE_ITERATION, 
-                             active=False, active_color="#F4CE14", active_text_color="#3B1E54", text_size=20)
-simulate_btn = ToggleButton(pos=(SCREEN_WIDTH - 230,value_itr_btn.bottom_rect.bottom + 15), size=(200, 50), content=SIMULATE, 
-                             active=False, active_color="#F4CE14", active_text_color="#3B1E54", text_size=20)
 # control button
 def next_iteration():
   global iteration_index
@@ -204,6 +194,10 @@ auto_btn = ToggleButton(pos=(restart_btn.bottom_rect.right + 15, SCREEN_HEIGHT-6
 AUTO_RUN_EVENT = pygame.USEREVENT  + 1
 auto_running = False
 
+modes_dropdown = Dropdown(pos=(30,20), border_color=(250, 177, 47), 
+                          options=['Policy Iteration', 'Value Iteration', 'Simulate'],
+                          callbacks=[run_policy_iteration, run_value_iteration, run_simulate])
+
 while True:
   # handle events
   for event in pygame.event.get():
@@ -219,9 +213,7 @@ while True:
       next_btn.handle_event(event)
       restart_btn.handle_event(event)
       auto_btn.handle_event(event)
-      policy_itr_btn.handle_event(event)
-      value_itr_btn.handle_event(event)
-      simulate_btn.handle_event(event)
+      modes_dropdown.handle_event(event)
     elif event.type == AUTO_RUN_EVENT:
       iteration_index += 1
       if iteration_index == total_iterations:
@@ -263,10 +255,7 @@ while True:
   next_btn.render(screen)
   restart_btn.render(screen)
   auto_btn.render(screen)
-    
-  policy_itr_btn.render(screen)
-  value_itr_btn.render(screen)
-  simulate_btn.render(screen)
+  modes_dropdown.render(screen)
   
   clock.tick(50)
   pygame.display.flip()

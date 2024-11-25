@@ -76,8 +76,8 @@ class HexagonTile:
       screen.blit(text_surface, text_rect)
       
     if self.action != None:
-      pygame.gfxdraw.aapolygon(screen, self.actions_arrows[self.action], (250, 177, 47))
       pygame.gfxdraw.filled_polygon(screen, self.actions_arrows[self.action], (250, 177, 47))
+      pygame.gfxdraw.aapolygon(screen, self.actions_arrows[self.action], (250, 177, 47))
       
       # font = pygame.font.Font(None, 16)
       # for i in range(6):

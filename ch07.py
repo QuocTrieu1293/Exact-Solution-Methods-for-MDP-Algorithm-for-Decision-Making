@@ -128,6 +128,7 @@ class PolicyIteration(ExactSolutionMethod):
         policy = self.initial_policy
         for _ in range(self.k_max):
             U = P.policy_evaluation(policy)
+            # U = P.iterative_policy_evaluation(policy,k_max=100)
             policy_prime = ValueFunctionPolicy(P, U)
             self.policies.append([policy_prime(s) for s in P.S])
             self.value_functions.append(U)

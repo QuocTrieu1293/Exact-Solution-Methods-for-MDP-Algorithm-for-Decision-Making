@@ -84,41 +84,41 @@ class HexWorldMDP(MDP):
                 (i + 1, j - 1)]  # Southeast
 
 
-HexWorld = HexWorldMDP(
-    hexes=[
-        (0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(-1,2),
-        (0,2),(1,2),(2,2),(3,2),(4,2),(5,2),(6,2),(7,2),
-        (8,2),(4,1),(5,0),(6,0),(7,0),(7,1),(8,1),(9,0)
-    ],
-    r_bump_border=-1.0,  # Reward for falling off hex map
-    p_intended=0.7,      # Probability of going in intended direction (same for each state)
-    special_hex_rewards={
-        (0,1): 5.0,    # left side reward
-        (2,0): -10.0,  # left side hazard
-        (9,0): 10.0    # right side reward
-    },
-    gamma=0.9            # Discount factor
-)
+# HexWorld = HexWorldMDP(
+#     hexes=[
+#         (0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(-1,2),
+#         (0,2),(1,2),(2,2),(3,2),(4,2),(5,2),(6,2),(7,2),
+#         (8,2),(4,1),(5,0),(6,0),(7,0),(7,1),(8,1),(9,0)
+#     ],
+#     r_bump_border=-1.0,  # Reward for falling off hex map
+#     p_intended=0.7,      # Probability of going in intended direction (same for each state)
+#     special_hex_rewards={
+#         (0,1): 5.0,    # left side reward
+#         (2,0): -10.0,  # left side hazard
+#         (9,0): 10.0    # right side reward
+#     },
+#     gamma=0.9            # Discount factor
+# )
 
-StraightLineHexWorld = HexWorldMDP(
-    hexes=[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0)],
-    r_bump_border=-1.0,
-    p_intended=0.7,
-    special_hex_rewards={
-        (6,0): 10.0  # right side reward
-    },
-    gamma=0.9
-)
+# StraightLineHexWorld = HexWorldMDP(
+#     hexes=[(0,0),(1,0),(2,0),(3,0),(4,0),(5,0),(6,0)],
+#     r_bump_border=-1.0,
+#     p_intended=0.7,
+#     special_hex_rewards={
+#         (6,0): 10.0  # right side reward
+#     },
+#     gamma=0.9
+# )
 
-ThreeTileStraightLineHexWorld = HexWorldMDP(
-    hexes=[(0,0),(1,0),(2,0)],
-    r_bump_border=-1.0,
-    p_intended=0.7,
-    special_hex_rewards={
-        (2,0): 10.0  # right side reward
-    },
-    gamma=0.9
-)
+# ThreeTileStraightLineHexWorld = HexWorldMDP(
+#     hexes=[(0,0),(1,0),(2,0)],
+#     r_bump_border=-1.0,
+#     p_intended=0.7,
+#     special_hex_rewards={
+#         (2,0): 10.0  # right side reward
+#     },
+#     gamma=0.9
+# )
 
 
 
