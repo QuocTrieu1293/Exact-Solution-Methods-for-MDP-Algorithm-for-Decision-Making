@@ -211,18 +211,17 @@ while True:
       pygame.quit()
       exit()
     elif event.type in [pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]:
-      mouse_pos = pygame.mouse.get_pos()
-      mouse_pressed = pygame.mouse.get_pressed()
+      # mouse_pos = pygame.mouse.get_pos()
+      # mouse_pressed = pygame.mouse.get_pressed()
       # if event.type == pygame.MOUSEBUTTONDOWN: print('mouse down')
       # elif event.type == pygame.MOUSEBUTTONUP: print('mouse up')
-      # print(mouse_pressed)
-      prev_btn.handle_event(event, mouse_pos, mouse_pressed)
-      next_btn.handle_event(event, mouse_pos, mouse_pressed)
-      restart_btn.handle_event(event, mouse_pos, mouse_pressed)
-      auto_btn.handle_event(event, mouse_pos, mouse_pressed)
-      policy_itr_btn.handle_event(event, mouse_pos, mouse_pressed)
-      value_itr_btn.handle_event(event, mouse_pos, mouse_pressed)
-      simulate_btn.handle_event(event, mouse_pos, mouse_pressed)
+      prev_btn.handle_event(event)
+      next_btn.handle_event(event)
+      restart_btn.handle_event(event)
+      auto_btn.handle_event(event)
+      policy_itr_btn.handle_event(event)
+      value_itr_btn.handle_event(event)
+      simulate_btn.handle_event(event)
     elif event.type == AUTO_RUN_EVENT:
       iteration_index += 1
       if iteration_index == total_iterations:
@@ -238,7 +237,7 @@ while True:
     auto_running = True
     iteration_index = 0
     prev_btn.enable, next_btn.enable, restart_btn.enable = False, False, False
-    pygame.time.set_timer(AUTO_RUN_EVENT, 1500)
+    pygame.time.set_timer(AUTO_RUN_EVENT, 1300)
   elif not auto_btn.active and auto_running:
     auto_running = False
     if iteration_index != 0: prev_btn.enable = True

@@ -87,12 +87,15 @@ class Button:
     pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
     screen.blit(self.content_surf, self.content_rect)
   
-  def handle_event(self, event: pygame.Event, mouse_pos: Tuple[int, int], mouse_pressed: Tuple[int, int, int]):
+  def handle_event(self, event: pygame.Event):
     if not self.enable:
       return
     if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]: 
-      if self.top_rect.collidepoint(mouse_pos):
-        if not mouse_pressed[0]:
+      if self.top_rect.collidepoint(event.pos):
+        left_mouse_pressed = (event.buttons[0] if event.type == pygame.MOUSEMOTION 
+                              else event.button == 1 if event.type == pygame.MOUSEBUTTONDOWN 
+                              else False)
+        if not left_mouse_pressed:
           self.mouse_entered = True
           if self.mouse_pressed:
             self.mouse_pressed = False
@@ -140,12 +143,15 @@ class ToggleButton(Button):
     pygame.draw.rect(screen, self.color, self.top_rect, border_radius=7)
     screen.blit(self.content_surf, self.content_rect)
 
-  def handle_event(self, event: pygame.Event, mouse_pos: Tuple[int, int], mouse_pressed: Tuple[int, int, int]):
+  def handle_event(self, event: pygame.Event):
     if not self.enable: 
       return
     if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION]:
-      if self.top_rect.collidepoint(mouse_pos):
-        if not mouse_pressed[0]:
+      if self.top_rect.collidepoint(event.pos):
+        left_mouse_pressed = (event.buttons[0] if event.type == pygame.MOUSEMOTION 
+                              else event.button == 1 if event.type == pygame.MOUSEBUTTONDOWN 
+                              else False)
+        if not left_mouse_pressed:
           self.mouse_entered = True
           if self.mouse_pressed:
             self.mouse_pressed = False
