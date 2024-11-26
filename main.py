@@ -4,7 +4,7 @@ import math
 import pygame
 from hexagon import HexagonTile
 from HexWorldMDP import HexWorldMDP
-from ch07 import PolicyIteration
+from ch07 import PolicyIteration, ValueIteration
 from elements import ColorBar, Button, ToggleButton, Dropdown
 from config import *
 from sys import exit
@@ -17,8 +17,11 @@ def create_text(text, font='assets/FiraCode-Medium.ttf', size=24, color=(255, 25
   text_font = pygame.font.Font(font,size)
   return text_font.render(text, True, color=color)
 
-def value_to_color(U) -> List[Tuple[int, int, int]]:
+def value_to_color(U) -> List[Tuple[List, List]]:
   min_val, max_val = np.nanmin(U), np.nanmax(U)
+  
+  if min_val == max_val:
+    return [([int(c * 255) for c in CMAP(0.5)[:3]], [int(c * 255) for c in CMAP(1.0)[:3]])] * len(U)
   
   colors = []
   for val in U:
@@ -36,7 +39,7 @@ def value_to_color(U) -> List[Tuple[int, int, int]]:
       [int(c * 255) for c in color[:3]], 
       [int(c * 255) for c in CMAP(1.0 if normalized_val >= 0.5 else 0.0)[:3]]
     ))
-    
+  
   return colors
 
 def init_hexagons(hexes) -> List[HexagonTile]:
@@ -66,7 +69,8 @@ def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
     hexagon.render(screen)
     
   # display Iteration
-  iteration_surface = create_text(f'Iteration {iteration_index}' if iteration_index > 0 else 'Initial policy')
+  iteration_surface = create_text('Initial policy' if iteration_index == 0 and modes_dropdown.value == POLICY_ITERATION
+                                  else f'Iteration {iteration_index}')
   iteration_rect = iteration_surface.get_rect(midtop=(SCREEN_WIDTH/2, 20))
   screen.blit(iteration_surface, iteration_rect)
   
@@ -115,7 +119,7 @@ def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
     (p_intended_surf, p_intended_rect),
     (gamma_surf, gamma_rect)
   ])
-  screen.blit(param_box_surf, (SCREEN_WIDTH - param_box_surf.width - 10, 10))
+  screen.blit(param_box_surf, (SCREEN_WIDTH - param_box_surf.width, 0))
 
 def update_hex(hex: HexagonTile, value, action, colour):
   hex.update()
@@ -127,9 +131,9 @@ def update_hex(hex: HexagonTile, value, action, colour):
     clicked_hex = hex if hex is not clicked_hex else None
 
 def run_policy_iteration():
-  global initial_policy, policy_iteration, optimal_policy, policies, value_functions, hex_colors, iteration_index, total_iterations
+  global policies, value_functions, hex_colors, iteration_index, total_iterations, optimal_policy
   initial_policy = HexWorld.random_policy()
-  policy_iteration = PolicyIteration(initial_policy, 50)
+  policy_iteration = PolicyIteration(initial_policy, k_max=50)
   optimal_policy = policy_iteration.solve(HexWorld)
   policies = [[initial_policy(s) for s in HexWorld.S], *policy_iteration.policies]
   value_functions = [
@@ -141,7 +145,14 @@ def run_policy_iteration():
   total_iterations = len(value_functions) - 1
 
 def run_value_iteration():
-  print('value iteration')
+  global policies, value_functions, hex_colors, iteration_index, total_iterations, optimal_policy
+  value_iteration = ValueIteration(k_max=50, delta=1e-4)
+  optimal_policy = value_iteration.solve(HexWorld)
+  policies = value_iteration.policies
+  value_functions = value_iteration.value_functions
+  hex_colors = [value_to_color(U) for U in value_functions]
+  iteration_index = 0
+  total_iterations = len(value_functions) - 1
 
 def run_simulate():
   print('simulate')
@@ -166,8 +177,6 @@ HexWorld = HexWorldMDP(
     gamma=gamma          # Discount factor
 )
 
-run_policy_iteration()
-
 pygame.init()
 pygame.display.set_caption('Minh hoạ thuật toán ra quyết định Chương 7')
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -183,21 +192,32 @@ def next_iteration():
 def prev_iteration():
   global iteration_index
   iteration_index -= 1
+def restart_algo():
+  if modes_dropdown.value == POLICY_ITERATION:
+    run_policy_iteration()
+  elif modes_dropdown.value == VALUE_ITERATION:
+    run_value_iteration()
+  elif modes_dropdown.value == SIMULATE:
+    run_simulate()
 prev_btn = Button(pos=(10, SCREEN_HEIGHT-60), size=(60,30), content='prev', elevation=4, callback=prev_iteration, key=pygame.K_LEFT)
-next_btn = Button(pos=(prev_btn.bottom_rect.right + 60, SCREEN_HEIGHT-60), size=(60,30), 
+next_btn = Button(pos=(prev_btn.bottom_rect.right + 76, SCREEN_HEIGHT-60), size=(60,30), 
                   content='next', elevation=4, callback=next_iteration, key=pygame.K_RIGHT)
 restart_btn = Button(pos=(next_btn.bottom_rect.right + 15, SCREEN_HEIGHT-60), size=(40,30), 
                      content=pygame.transform.scale(pygame.image.load('assets/restart_icon.svg').convert_alpha(), (20, 20)) , 
-                     elevation=4, callback=run_policy_iteration, key=pygame.K_r)
+                     elevation=4, callback=restart_algo, key=pygame.K_r)
 auto_btn = ToggleButton(pos=(restart_btn.bottom_rect.right + 15, SCREEN_HEIGHT-60), size=(80,30), 
                   content='auto run', elevation=4, key=pygame.K_a)
 AUTO_RUN_EVENT = pygame.USEREVENT  + 1
 auto_running = False
 
-modes_dropdown = Dropdown(pos=(30,20), border_color=(250, 177, 47), 
-                          options=['Policy Iteration', 'Value Iteration', 'Simulate'],
+POLICY_ITERATION, VALUE_ITERATION, SIMULATE = 'Policy Iteration', 'Value Iteration', 'Simulate'
+MODES = [POLICY_ITERATION, VALUE_ITERATION, SIMULATE]
+modes_dropdown = Dropdown(pos=(30,20), border_color=(250, 177, 47), options=MODES,
                           callbacks=[run_policy_iteration, run_value_iteration, run_simulate])
 
+run_policy_iteration()
+
+# game loop
 while True:
   # handle events
   for event in pygame.event.get():

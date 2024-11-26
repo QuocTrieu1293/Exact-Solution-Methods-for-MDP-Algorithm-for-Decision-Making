@@ -135,18 +135,38 @@ class PolicyIteration(ExactSolutionMethod):
             if all([policy(s) == policy_prime(s) for s in P.S]):
                 break
             policy = policy_prime
-        return policy
+        
+        # return policy # ValueFunctionPolicy
+        return self.policies[-1]
 
 
 class ValueIteration(ExactSolutionMethod):
-    def __init__(self, k_max: int):
+    def __init__(self, k_max: int, delta: float = 0):
         self.k_max = k_max
+        self.delta = delta
+        self.policies = []
+        self.value_functions = []
 
     def solve(self, P: MDP) -> Callable[[Any], Any]:
+        self.policies, self.value_functions = [], []
+        
         U = np.zeros(len(P.S))
+        policy = ValueFunctionPolicy(P, U)
+        self.policies.append([policy(s) for s in P.S])
+        self.value_functions.append(U)
         for _ in range(self.k_max):
-            U = np.array([P.backup(U, s) for s in P.S])
-        return ValueFunctionPolicy(P, U)
+            U_new = np.array([P.backup(U, s) for s in P.S])
+            policy = ValueFunctionPolicy(P, U_new)
+            self.policies.append([policy(s) for s in P.S])
+            self.value_functions.append(U_new)
+            
+            bellman_residual = np.max(np.abs(U_new - U))
+            U = U_new
+            if bellman_residual < self.delta:
+                break
+        
+        # return ValueFunctionPolicy(P, U)
+        return self.policies[-1]
 
 
 class GaussSeidelValueIteration(ExactSolutionMethod):

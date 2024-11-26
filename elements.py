@@ -170,8 +170,8 @@ class ToggleButton(Button):
         self.key_pressed = False
 
 class Dropdown:
-    def __init__(self, pos: Tuple[int, int], options: List[str], size: Tuple[int, int] = (0, 0), color = '#faf7f0', border_color = (52, 49, 49),
-                 text_size = 19, font = 'assets/FiraCode-Medium.ttf', text_color = (52, 49, 49), callbacks: List[Callable | None] = []):
+    def __init__(self, pos: Tuple[int, int], options: List[str], size: Tuple[int, int]=(0, 0), color=(250, 247, 240), border_color=(52, 49, 49),
+                 text_size=18, font='assets/FiraCode-Medium.ttf', font_bold='assets/FiraCode-SemiBold.ttf', text_color = (52, 49, 49), callbacks: List[Callable | None] = []):
         self.options = options
         self.expanded = False
         self.callbacks = callbacks + [None] * (len(options) - len(callbacks)) if len(options) > len(callbacks) else callbacks
@@ -180,15 +180,20 @@ class Dropdown:
         self.text_color = text_color
         self.font = font
         self.text_size = text_size
-        self.sub_text_surfs = [pygame.font.Font(font,text_size-2).render(s, True, text_color) for s in options]
-        self.main_text_surfs = [pygame.font.Font(font,text_size).render(s, True, text_color) for s in options]
+        self.sub_text_surfs = [pygame.font.Font(font,text_size-2).render(s, True, (255, 253, 246)) for s in options]
+        self.main_text_surfs = [pygame.font.Font(font_bold,text_size).render(s, True, text_color) for s in options]
         size = (max(size[0], max([surf.get_width() for surf in self.main_text_surfs]) + 44*2), 
                      max(size[1], max([surf.get_height() for surf in self.main_text_surfs]) + 10))
         item_size = (size[0], self.sub_text_surfs[0].get_height() + 10)
         self.main_rect = pygame.Rect(pos, size)
         self.sub_rects = [pygame.Rect((pos[0], self.main_rect.bottom + i * item_size[1]), item_size) for i in range(len(options))]
         
-        self.selected_index = 0
+        self.update(0)
+        self.hovered_index = -1
+    
+    def update(self, idx):
+      self.value = self.options[idx]
+      self.selected_index = idx
     
     def render(self, screen: pygame.Surface):
         pygame.draw.rect(screen, self.color, self.main_rect)
@@ -207,20 +212,31 @@ class Dropdown:
         if not self.expanded:
             return
         for i, rect in enumerate(self.sub_rects):
-            pygame.draw.rect(screen, self.color, rect)
-            pygame.draw.rect(screen, "#c8c5c0", rect, 1)
+            rect_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+            rect_surf.fill((0, 0, 0, 120) if i != self.hovered_index else (200, 197, 192, 120))
+            screen.blit(rect_surf, rect)
+            pygame.draw.rect(screen, (200, 197, 192, 120), rect, 1)
             screen.blit(self.sub_text_surfs[i], self.sub_text_surfs[i].get_rect(center=rect.center))
     
     def handle_event(self, event):
-        if not (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
-            return
-        if self.main_rect.collidepoint(event.pos):
-            self.expanded = not self.expanded
-        elif self.expanded:
-            for i, rect in enumerate(self.sub_rects):
-                if rect.collidepoint(event.pos):
-                    self.selected_index = i
-                    if self.callbacks[i]:
-                        self.callbacks[i]()
-                    break
-            self.expanded = False
+        if event.type == pygame.MOUSEMOTION and self.expanded:
+          self.hovered_index = -1
+          for i, rect in enumerate(self.sub_rects):
+            if rect.collidepoint(event.pos):
+              self.hovered_index = i
+              break
+        
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+          if self.main_rect.collidepoint(event.pos):
+              self.expanded = not self.expanded
+          elif self.expanded:
+              for i, rect in enumerate(self.sub_rects):
+                  if rect.collidepoint(event.pos):
+                      self.update(i)
+                      if self.callbacks[i]:
+                          self.callbacks[i]()
+                      break
+              self.expanded = False
+        
+        if not self.expanded: self.hovered_index = -1
+        
