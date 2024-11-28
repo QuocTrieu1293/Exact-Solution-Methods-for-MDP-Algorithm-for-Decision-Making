@@ -31,17 +31,17 @@ class MDP():
                  A: list[Any],
                  T: Callable[[Any, Any, Any], float] | np.ndarray,
                  R: Callable[[Any, Any], float] | np.ndarray,
-                 TR: Callable[[Any, Any], tuple[Any, float]] = None):
+                 TR: Callable[[Any, Any], tuple[Any, float]] = None, terminal_state: Any = None):
         self.gamma = gamma  # discount factor
         self.S = S          # state space
         self.A = A          # action space
-
+        
         # reward function R(s, a)
         if type(R) == np.ndarray:
             self.R = lambda s, a: R[s, a]
         else:
             self.R = R
-
+        
         # transition function T(s, a, s')
         # sample next state and reward given current state and action: s', r = TR(s, a)
         if type(T) == np.ndarray:
@@ -50,6 +50,8 @@ class MDP():
         else:
             self.T = T
             self.TR = TR
+        
+        self.terminal_state = terminal_state
 
     def lookahead(self, U: Callable[[Any], float] | np.ndarray, s: Any, a: Any) -> float:
         if callable(U):
@@ -85,9 +87,11 @@ class MDP():
             a = policy(s)
             s_prime, r = self.TR(s, a)
             trajectory.append((s, a, r))
+            if s_prime is self.terminal_state:
+                break
             s = s_prime
         return trajectory
-    
+
     def random_policy(self):
         return lambda s, A=self.A: random.choices(A)[0]
 
@@ -136,8 +140,7 @@ class PolicyIteration(ExactSolutionMethod):
                 break
             policy = policy_prime
         
-        # return policy # ValueFunctionPolicy
-        return self.policies[-1]
+        return policy # ValueFunctionPolicy - Callable
 
 
 class ValueIteration(ExactSolutionMethod):
@@ -165,8 +168,7 @@ class ValueIteration(ExactSolutionMethod):
             if bellman_residual < self.delta:
                 break
         
-        # return ValueFunctionPolicy(P, U)
-        return self.policies[-1]
+        return ValueFunctionPolicy(P, U)
 
 
 class GaussSeidelValueIteration(ExactSolutionMethod):

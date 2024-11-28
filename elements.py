@@ -28,7 +28,7 @@ class ColorBar:
     norm = mpl.colors.Normalize(self.vmin,self.vmax)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=CMAP), cax=ax, orientation='horizontal')
     # fig.patch.set_facecolor((0, 0, 0))
-    fig.patch.set_color((52/255, 49/255, 49/255))
+    fig.patch.set_color((64/255, 62/255, 62/255))
     cbar.ax.tick_params(colors='white')
 
     fig.canvas.draw()
@@ -114,7 +114,7 @@ class Button:
         if self.callback: self.callback()
 
 class ToggleButton(Button):
-  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float], content: str | pygame.Surface = '', 
+  def __init__(self, pos: Tuple[float, float], size: Tuple[float, float] = (0,0), content: str | pygame.Surface = '', 
                elevation: float = 0, key: int = None, text_size:int = 16, active: bool = False, active_color = '#399918', active_text_color = '#F4CE14'):
     super().__init__(pos=pos, size=size, content=content, elevation=elevation, key=key, text_size=text_size)    
     self.active = active

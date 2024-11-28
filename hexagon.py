@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 import pygame
-from pygame import gfxdraw
 import numpy as np
 import pygame.gfxdraw
 
@@ -17,10 +16,12 @@ class HexagonTile:
   position: Tuple[float, float]
   colour: Tuple[int, ...]
   border_colour: Tuple[int, ...]
+  border_size: int
   highlight_offset: int = 3
   max_highlight_ticks: int = 15
   value: float = None
   action: int = None
+  rewards: List[float] = None
   clicked: bool = False
   first_hovered: bool = False
 
@@ -66,26 +67,25 @@ class HexagonTile:
   def render(self, screen:pygame.Surface) -> None:
     """Renders the hexagon on the screen"""
     pygame.draw.polygon(screen, self.highlight_colour, self.vertices)
-    pygame.draw.polygon(screen, self.border_colour, self.vertices, 3)
+    pygame.draw.polygon(screen, self.border_colour, self.vertices, self.border_size)
     
     if not np.isnan(self.value) and self.value != None:
       font = pygame.font.Font(None, 23)
       value = round(self.value, 2)
-      text_surface = font.render(str(int(value) if value.is_integer() else value), True, (0, 0, 0))
-      text_rect = text_surface.get_rect(center=self.centre)
-      screen.blit(text_surface, text_rect)
+      text_surf = font.render(f'{int(value) if value.is_integer() else value}', True, (0, 0, 0))
+      text_rect = text_surf.get_rect(center=self.centre)
+      screen.blit(text_surf, text_rect)
       
     if self.action != None:
-      pygame.gfxdraw.filled_polygon(screen, self.actions_arrows[self.action], (250, 177, 47))
-      pygame.gfxdraw.aapolygon(screen, self.actions_arrows[self.action], (250, 177, 47))
-      
-      # font = pygame.font.Font(None, 16)
-      # for i in range(6):
-      #   text_surface = font.render(str(i), True, (243, 198, 35))
-      #   text_rect = text_surface.get_rect(center=self.actions_arrows[i][0])
-      #   screen.blit(text_surface, text_rect)
-      
-      
+      pygame.gfxdraw.filled_polygon(screen, self.action_arrows[self.action], (250, 177, 47))
+      pygame.gfxdraw.aapolygon(screen, self.action_arrows[self.action], (250, 177, 47))
+    elif self.rewards != None:
+      font = pygame.font.Font(None, 14)
+      for i, r in enumerate(self.rewards):
+        text_surf = font.render(f'{int(r) if r.is_integer() else r}', True, "#059212")
+        text_rect = text_surf.get_rect(center=self.action_rewards[i])
+        screen.blit(text_surf, text_rect)
+        
 
   def render_highlight(self, screen, border_colour) -> None:
     """Draws a border around the hexagon with the specified colour"""
@@ -111,37 +111,31 @@ class HexagonTile:
     return tuple(brighten(x, offset) for x in self.colour)
   
   @property
-  def actions_arrows(self) -> List[List[Tuple[float, float]]]:
+  def action_arrows(self) -> List[List[Tuple[float, float]]]:
     cx, cy = self.centre
-    right_arrow = [
+    east_arrow = [
       (cx + self.minimal_radius - 5, cy),  # đầu mũi tên
       (cx + self.minimal_radius - 12, cy - self.minimal_radius/6),
       (cx + self.minimal_radius - 10, cy), # đích mũi tên
       (cx + self.minimal_radius - 12, cy + self.minimal_radius/6),
-    ]
+    ] # ->
     
     return [
       [(
         math.cos(math.radians(deg)) * (x - cx) - math.sin(math.radians(deg)) * (y - cy) + cx, 
         math.sin(math.radians(deg)) * (x - cx) + math.cos(math.radians(deg)) * (y - cy) + cy
-      ) for x,y in right_arrow] for deg in range(-0, -360, -60) # phải dùng góc âm vì gốc toạ độ của chương trình là góc trên bên trái
+      ) for x,y in east_arrow] for deg in range(-0, -360, -60) # phải dùng góc âm vì gốc toạ độ của chương trình là góc trên bên trái
     ]
+  
+  @property
+  def action_rewards(self) -> List[Tuple[float, float]]:
+    cx, cy = self.centre
+    x, y = (cx + self.minimal_radius - 12, cy) # east reward
     
-  def check_clicked(self) -> bool:
-    pressed_mouse = pygame.mouse.get_pressed()
-    if self.collide_with_point(pygame.mouse.get_pos()):
-      if not pressed_mouse[0]:
-        self.first_hovered = True
-        if self.mouse_pressed:
-          self.mouse_pressed = False
-          return True
-      elif self.first_hovered:
-        self.mouse_pressed = True
-    else:
-      self.mouse_pressed = False
-      self.first_hovered = False
-    
-    return False
+    return [(
+      math.cos(math.radians(deg)) * (x - cx) - math.sin(math.radians(deg)) * (y - cy) + cx, 
+      math.sin(math.radians(deg)) * (x - cx) + math.cos(math.radians(deg)) * (y - cy) + cy
+    ) for deg in range(-0, -360, -60)]
   
   def render_clicked_border(self, screen) -> None:
-    pygame.draw.polygon(screen, '#399918', self.vertices, 5)
+    pygame.draw.polygon(screen, (6, 208, 1), self.vertices, 5)

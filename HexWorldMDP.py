@@ -72,7 +72,7 @@ class HexWorldMDP(MDP):
             T[s_absorbing, a, s_absorbing] = 1.0
 
         # Initialize the MDP
-        super().__init__(gamma, [s for s in range(n_states)], [a for a in range(n_actions)], T, R)
+        super().__init__(gamma, [s for s in range(n_states)], [a for a in range(n_actions)], T, R, terminal_state=s_absorbing)
 
     def hex_neighbors(self, hex: Tuple[int, int]):
         i, j = hex
