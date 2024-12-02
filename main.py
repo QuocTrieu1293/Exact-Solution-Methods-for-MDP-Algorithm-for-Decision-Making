@@ -168,6 +168,18 @@ def updateHexagons():
       next_s = simulate_rs[iteration_index+1][0]
       hexagons[next_s].border_colour = hex_colors[next_s][1]
       hexagons[next_s].border_size = HEX_BORDER_SIZE
+      hexagons[next_s].move_dir = None
+      if next_s == cur_s:
+        a = simulate_rs[iteration_index][1]
+        a_left = (a + 1) % len(HexWorld.A)
+        a_right = (a - 1) % len(HexWorld.A)
+        neighbor_left = HexWorldMDP.hex_neighbors(hexes[cur_s])[a_left]
+        hexagons[cur_s].move_dir = a_left if neighbor_left not in hexes else a_right
+        hexagons[cur_s].move_dir_color = (255, 30, 30)
+      else:
+        hexagons[cur_s].move_dir = HexWorldMDP.hex_neighbors(hexes[cur_s]).index(hexes[next_s])
+        hexagons[cur_s].move_dir_color = (6, 208, 1) 
+        
     hexagons[cur_s].border_colour = (6, 208, 1) # green
     hexagons[cur_s].border_size = 5
     if iteration_index > 0:
@@ -176,6 +188,7 @@ def updateHexagons():
         hexagons[cur_s].border_colour = (255, 30, 30) # red
       else:
         hexagons[pre_s].border_colour = (101, 69, 32) # brown
+        hexagons[pre_s].move_dir = None
   elif modes_dropdown.value in [POLICY_ITERATION, VALUE_ITERATION]:
     for i, hex in enumerate(hexagons):
       hex.value = values[iteration_index][i]
@@ -238,7 +251,16 @@ def run_simulate():
   cumulative_reward = []
   r = 0
   for step in range(total_iterations):
-    r += (gamma**step) * simulate_rs[step][2]
+    s = simulate_rs[step][0]
+    next_s = simulate_rs[step+1][0] if step < total_iterations-1 else HexWorld.terminal_state
+    
+    reward = 0
+    if next_s == s:
+      reward = r_bump_border
+    elif hexes[s] in special_hex_rewards:
+      reward = special_hex_rewards[hexes[s]]
+      
+    r += (gamma**step) * reward
     cumulative_reward.append(r)
   
   updateHexagons()

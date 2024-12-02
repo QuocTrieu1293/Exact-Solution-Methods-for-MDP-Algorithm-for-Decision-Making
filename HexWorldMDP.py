@@ -73,8 +73,9 @@ class HexWorldMDP(MDP):
 
         # Initialize the MDP
         super().__init__(gamma, [s for s in range(n_states)], [a for a in range(n_actions)], T, R, terminal_state=s_absorbing)
-
-    def hex_neighbors(self, hex: Tuple[int, int]):
+    
+    @staticmethod
+    def hex_neighbors(hex: Tuple[int, int]):
         i, j = hex
         return [(i + 1, j),      # East
                 (i, j + 1),      # Northeast

@@ -24,6 +24,8 @@ class HexagonTile:
   rewards: List[float] = None
   clicked: bool = False
   first_hovered: bool = False
+  move_dir: int = None
+  move_dir_color: Tuple[int, ...] = None
 
   def __post_init__(self):
     self.vertices = self.compute_vertices()
@@ -85,6 +87,10 @@ class HexagonTile:
         text_surf = font.render(f'{int(r) if r.is_integer() else r}', True, "#059212")
         text_rect = text_surf.get_rect(center=self.action_rewards[i])
         screen.blit(text_surf, text_rect)
+    
+    if self.move_dir != None:
+      pygame.gfxdraw.filled_polygon(screen, self.action_arrows[self.move_dir], self.move_dir_color)
+      pygame.gfxdraw.aapolygon(screen, self.action_arrows[self.move_dir], self.move_dir_color)
         
 
   def render_highlight(self, screen, border_colour) -> None:
