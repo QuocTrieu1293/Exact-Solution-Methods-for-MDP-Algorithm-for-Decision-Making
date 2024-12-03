@@ -73,9 +73,9 @@ def handleClickHex(event: pygame.Event):
     elif hex:
       clicked_hex = hex
   
-  if hex:
-    idx = hexagons.index(hex) 
-    print(f'{hexes[idx]}: {idx}')
+  # if hex:
+  #   idx = hexagons.index(hex) 
+  #   print(f'{hexes[idx]}: {idx}')
 
 def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
   """Renders hexagons on the screen"""
@@ -243,6 +243,7 @@ def run_simulate():
     hex.action = actions[i]
     hex.value = values[i]
     hex.colour, hex.border_colour = hex_colors[i]
+    hex.move_dir = None
   
   simulate_rs = HexWorld.simulate(s=start_s, policy=optimal_policy, d=50) # list of (s, a, r)
   iteration_index = 0
