@@ -89,7 +89,8 @@ def render(screen: pygame.Surface, hexagons: List[HexagonTile]):
     else: title_surf = create_text(f'Iteration {iteration_index-1}')
   elif modes_dropdown.value == VALUE_ITERATION:
     if iteration_index == 0: title_surf = create_text('Hex World problem')
-    else: title_surf = create_text(f'Iteration {iteration_index}')
+    elif iteration_index == 1: title_surf = create_text('Initial value function')
+    else: title_surf = create_text(f'Iteration {iteration_index-1}')
   elif modes_dropdown.value == SIMULATE:
     title_surf = create_text(f'Step {iteration_index}')
   
