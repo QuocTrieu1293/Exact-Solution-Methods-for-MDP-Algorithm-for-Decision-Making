@@ -10,7 +10,7 @@
 ## ✨ Overview
 This is a course project for the Decision Support System subject at my university. The project focuses on studying Exact Solution Methods for the MDP (Markov Decision Process) problem and creating a program to simulate its workings. The project is written in Python and uses the Pygame library to visualize the simulation.
 
-The source code for the algorithm and Hex Word MDP problem (ch07.py & HexWordMDP.py) is taken from this repository: https://github.com/griffinbholt/decisionmaking-code-py.
+The source code for the algorithm and Hex Word MDP problem (**ch07.py** & **HexWordMDP.py**) is taken from this repository: https://github.com/griffinbholt/decisionmaking-code-py.
 
 *The goal of this project is to visually simulate the Hex World MDP problem and the Exact Solution Methods for solving it.*
 
